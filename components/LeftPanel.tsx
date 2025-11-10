@@ -76,7 +76,7 @@ const BrandHeader: React.FC = () => (
     </div>
     <div>
       <h1 className="text-lg font-semibold leading-tight">Neuro Glove</h1>
-      <div className="text-gray-500 text-sm">Assistance • Inventor: Naitik Anand</div>
+      <div className="text-gray-500 text-sm">Assistance</div>
     </div>
   </div>
 );
