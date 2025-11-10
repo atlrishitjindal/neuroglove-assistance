@@ -2,8 +2,36 @@ import React, { useState, useEffect } from 'react';
 import { DoctorInfo, UIStrings } from '../services';
 import * as services from '../services';
 
-// Inlined DoctorCard component
-const DoctorCard: React.FC<{ doctor: DoctorInfo, uiStrings: UIStrings }> = ({ doctor, uiStrings }) => {
+// Utility: Calculate distance (Haversine formula)
+function getDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 6371; // Radius of Earth in km
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+// Local mock dataset (you can add more)
+const localDoctors = [
+  { name: 'Dr. Aarav Sharma', phone: '+91 98765 43210', lat: 28.6139, lon: 77.2090, types: 'Neurosurgeon, Specialist' },
+  { name: 'Dr. Meera Kapoor', phone: '+91 91234 56789', lat: 28.6210, lon: 77.2150, types: 'Physician' },
+  { name: 'Dr. Rohan Gupta', phone: '+91 99888 77665', lat: 28.6095, lon: 77.2021, types: 'Orthopedic Surgeon' },
+];
+
+const localHospitals = [
+  { name: 'Apollo Hospital', lat: 28.6221, lon: 77.2085 },
+  { name: 'Fortis Healthcare', lat: 28.6152, lon: 77.2113 },
+  { name: 'Max Super Specialty', lat: 28.6189, lon: 77.2040 },
+];
+
+// ------------------ DoctorCard ------------------
+const DoctorCard: React.FC<{ doctor: DoctorInfo; uiStrings: UIStrings }> = ({ doctor, uiStrings }) => {
   const initials = doctor.name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
 
   const handleWhatsApp = () => {
@@ -49,7 +77,7 @@ const DoctorCard: React.FC<{ doctor: DoctorInfo, uiStrings: UIStrings }> = ({ do
   );
 };
 
-// Inlined Helplines component
+// ------------------ Helplines ------------------
 const Helplines: React.FC<{ uiStrings: UIStrings }> = ({ uiStrings }) => {
   const HelplineRow: React.FC<{ label: string; number: string; isPrimary?: boolean }> = ({ label, number, isPrimary }) => (
     <div className={`flex justify-between items-center p-2.5 rounded-lg ${isPrimary ? 'bg-gradient-to-r from-teal-50/50 to-emerald-50/50' : 'bg-gray-100/50'}`}>
@@ -69,6 +97,7 @@ const Helplines: React.FC<{ uiStrings: UIStrings }> = ({ uiStrings }) => {
   );
 };
 
+// ------------------ Brand Header ------------------
 const BrandHeader: React.FC = () => (
   <div className="flex items-center gap-2.5">
     <div className="flex items-center justify-center w-[40px] h-[40px] rounded-[12px] bg-gradient-to-b from-[#19c7b3] to-[#0f766e]">
@@ -81,7 +110,7 @@ const BrandHeader: React.FC = () => (
   </div>
 );
 
-// Main LeftPanel component
+// ------------------ Main Component ------------------
 const LeftPanel: React.FC<{ onDoctorFound: (doctor: DoctorInfo | null) => void; doctor: DoctorInfo | null; appendLog: (text: string, direction: 'in' | 'out') => void; uiStrings: UIStrings; }> =
 ({ onDoctorFound, doctor, appendLog, uiStrings }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -91,23 +120,25 @@ const LeftPanel: React.FC<{ onDoctorFound: (doctor: DoctorInfo | null) => void; 
     localStorage.setItem('neuroglove-emergency-contact', emergencyNumber);
   }, [emergencyNumber]);
 
-  // ✅ FIX: Replace Google Maps doctor search with a local mock
+  // ✅ Nearby Doctors
   const handleSearchDoctors = async () => {
     setIsLoading(true);
     appendLog('Finding nearby doctors...', 'out');
     try {
-      // Mock doctor data — replace with actual API later if needed
-      const mockDoctor: DoctorInfo = {
-        name: 'Dr. Aarav Sharma',
-        phone: '+91 98765 43210',
-        lat: 28.6139,
-        lon: 77.2090,
-        distKm: 1.8,
-        types: 'Neurosurgeon, Specialist'
-      };
-      await new Promise(res => setTimeout(res, 1000)); // Simulate delay
-      onDoctorFound(mockDoctor);
-      appendLog(`Nearest doctor: ${mockDoctor.name} (${services.formatDistance(mockDoctor.distKm)})`, 'in');
+      const position = await new Promise<GeolocationPosition>((resolve, reject) =>
+        navigator.geolocation.getCurrentPosition(resolve, reject)
+      );
+
+      const { latitude, longitude } = position.coords;
+
+      const doctorsWithDist = localDoctors.map(d => ({
+        ...d,
+        distKm: getDistanceKm(latitude, longitude, d.lat, d.lon),
+      }));
+
+      const nearest = doctorsWithDist.sort((a, b) => a.distKm - b.distKm)[0];
+      onDoctorFound(nearest);
+      appendLog(`Nearest doctor: ${nearest.name} (${services.formatDistance(nearest.distKm)})`, 'in');
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       appendLog(`Error finding doctors: ${msg}`, 'in');
@@ -118,10 +149,23 @@ const LeftPanel: React.FC<{ onDoctorFound: (doctor: DoctorInfo | null) => void; 
     }
   };
 
+  // ✅ Nearby Hospitals
   const handleSearchHospitals = async () => {
     appendLog('Finding nearby hospitals...', 'out');
     try {
-      await services.findNearbyHospitals(appendLog);
+      const position = await new Promise<GeolocationPosition>((resolve, reject) =>
+        navigator.geolocation.getCurrentPosition(resolve, reject)
+      );
+
+      const { latitude, longitude } = position.coords;
+      const hospitalsWithDist = localHospitals.map(h => ({
+        ...h,
+        distKm: getDistanceKm(latitude, longitude, h.lat, h.lon),
+      }));
+
+      const nearest = hospitalsWithDist.sort((a, b) => a.distKm - b.distKm)[0];
+      appendLog(`Nearest hospital: ${nearest.name} (${services.formatDistance(nearest.distKm)})`, 'in');
+      services.openMapsDirections(nearest.lat, nearest.lon, nearest.name);
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       appendLog(`Location error: ${msg}`, 'in');
