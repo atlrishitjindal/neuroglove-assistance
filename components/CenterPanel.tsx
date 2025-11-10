@@ -47,12 +47,21 @@ const CenterPanel: React.FC<{ logs: LogEntry[]; setLogs: React.Dispatch<React.Se
   useEffect(() => { if (monitorRef.current) monitorRef.current.scrollTop = monitorRef.current.scrollHeight; }, [logs, aiReport]);
   useEffect(() => { logs.forEach(log => services.saveLog(log)); }, [logs]);
   useEffect(() => {
-    const loadHistory = async () => {
-      if (isHistoryView) setLogs(await services.loadLogsForDate(new Date(historyDate)));
-      else setLogs([]); // Clear for live view
-    };
-    loadHistory();
-  }, [isHistoryView, historyDate, setLogs]);
+  const loadHistory = async () => {
+    if (isHistoryView) {
+      const historyLogs = await services.loadLogsForDate(new Date(historyDate));
+      if (historyLogs.length > 0) {
+        setLogs(historyLogs);
+        appendLog(`📜 Loaded ${historyLogs.length} logs from ${historyDate}`, "in");
+      } else {
+        appendLog(`⚠️ No logs found for ${historyDate}`, "in");
+        setLogs([]);
+      }
+    }
+  };
+  loadHistory();
+}, [isHistoryView, historyDate]);
+
 
   const handleConnect = async (type: 'bluetooth' | 'serial') => {
   try {
