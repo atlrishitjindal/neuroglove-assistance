@@ -2,6 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { DoctorInfo, UIStrings } from '../services';
 import * as services from '../services';
 
+const formatDistance = (km: number) => {
+  if (!km && km !== 0) return '';
+  if (km < 1) return `${Math.round(km * 1000)} m`;
+  return `${km.toFixed(1)} km`;
+};
+
+
 // Utility: Calculate distance (Haversine formula)
 function getDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371; // Radius of Earth in km
@@ -57,7 +64,7 @@ const DoctorCard: React.FC<{ doctor: DoctorInfo; uiStrings: UIStrings }> = ({ do
             {doctor.phone || uiStrings.phoneNotAvailable}
           </a>
           <div className="flex items-center gap-2">
-            <div className="text-teal-800 font-bold min-w-[60px] text-right text-sm">{services.formatDistance(doctor.distKm)}</div>
+            <div className="text-teal-800 font-bold min-w-[60px] text-right text-sm">{formatDistance(doctor.distKm)}</div>
             <button
               onClick={() => services.openMapsDirections(doctor.lat, doctor.lon, doctor.name)}
               className="text-teal-700 font-bold text-xs px-2.5 py-1.5 rounded-md bg-teal-500/10 border border-teal-500/20 hover:bg-teal-500/20 transition-colors"
@@ -138,7 +145,7 @@ const LeftPanel: React.FC<{ onDoctorFound: (doctor: DoctorInfo | null) => void; 
 
       const nearest = doctorsWithDist.sort((a, b) => a.distKm - b.distKm)[0];
       onDoctorFound(nearest);
-      appendLog(`Nearest doctor: ${nearest.name} (${services.formatDistance(nearest.distKm)})`, 'in');
+      appendLog(`Nearest doctor: ${nearest.name} (${formatDistance(nearest.distKm)})`, 'in');
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       appendLog(`Error finding doctors: ${msg}`, 'in');
@@ -164,7 +171,7 @@ const LeftPanel: React.FC<{ onDoctorFound: (doctor: DoctorInfo | null) => void; 
       }));
 
       const nearest = hospitalsWithDist.sort((a, b) => a.distKm - b.distKm)[0];
-      appendLog(`Nearest hospital: ${nearest.name} (${services.formatDistance(nearest.distKm)})`, 'in');
+      appendLog(`Nearest hospital: ${nearest.name} (${formatDistance(nearest.distKm)})`, 'in');
       services.openMapsDirections(nearest.lat, nearest.lon, nearest.name);
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
