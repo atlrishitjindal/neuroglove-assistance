@@ -2,29 +2,35 @@ import React, { useState, useEffect } from 'react';
 import { DoctorInfo, UIStrings } from '../services';
 import * as services from '../services';
 
+// ✅ Local fallback for distance formatting
 const formatDistance = (km: number) => {
   if (!km && km !== 0) return '';
   if (km < 1) return `${Math.round(km * 1000)} m`;
   return `${km.toFixed(1)} km`;
 };
 
+// ✅ Local fallback for maps opening
+const openMapsDirections = (lat: number, lon: number, name?: string) => {
+  const label = encodeURIComponent(name || 'Destination');
+  const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}&travelmode=driving&destination_place_id=${label}`;
+  window.open(url, '_blank');
+};
 
-// Utility: Calculate distance (Haversine formula)
+// ✅ Utility: Calculate distance using Haversine formula
 function getDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number) {
-  const R = 6371; // Radius of Earth in km
+  const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLon = ((lon2 - lon1) * Math.PI) / 180;
   const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.sin(dLat / 2) ** 2 +
     Math.cos((lat1 * Math.PI) / 180) *
       Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
+      Math.sin(dLon / 2) ** 2;
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 }
 
-// Local mock dataset (you can add more)
+// ✅ Mock data (no API needed)
 const localDoctors = [
   { name: 'Dr. Aarav Sharma', phone: '+91 98765 43210', lat: 28.6139, lon: 77.2090, types: 'Neurosurgeon, Specialist' },
   { name: 'Dr. Meera Kapoor', phone: '+91 91234 56789', lat: 28.6210, lon: 77.2150, types: 'Physician' },
@@ -37,7 +43,7 @@ const localHospitals = [
   { name: 'Max Super Specialty', lat: 28.6189, lon: 77.2040 },
 ];
 
-// ------------------ DoctorCard ------------------
+// ✅ DoctorCard Component
 const DoctorCard: React.FC<{ doctor: DoctorInfo; uiStrings: UIStrings }> = ({ doctor, uiStrings }) => {
   const initials = doctor.name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
 
@@ -66,7 +72,7 @@ const DoctorCard: React.FC<{ doctor: DoctorInfo; uiStrings: UIStrings }> = ({ do
           <div className="flex items-center gap-2">
             <div className="text-teal-800 font-bold min-w-[60px] text-right text-sm">{formatDistance(doctor.distKm)}</div>
             <button
-              onClick={() => services.openMapsDirections(doctor.lat, doctor.lon, doctor.name)}
+              onClick={() => openMapsDirections(doctor.lat, doctor.lon, doctor.name)}
               className="text-teal-700 font-bold text-xs px-2.5 py-1.5 rounded-md bg-teal-500/10 border border-teal-500/20 hover:bg-teal-500/20 transition-colors"
             >
               {uiStrings.directions}
@@ -84,9 +90,9 @@ const DoctorCard: React.FC<{ doctor: DoctorInfo; uiStrings: UIStrings }> = ({ do
   );
 };
 
-// ------------------ Helplines ------------------
+// ✅ Helplines
 const Helplines: React.FC<{ uiStrings: UIStrings }> = ({ uiStrings }) => {
-  const HelplineRow: React.FC<{ label: string; number: string; isPrimary?: boolean }> = ({ label, number, isPrimary }) => (
+  const Row: React.FC<{ label: string; number: string; isPrimary?: boolean }> = ({ label, number, isPrimary }) => (
     <div className={`flex justify-between items-center p-2.5 rounded-lg ${isPrimary ? 'bg-gradient-to-r from-teal-50/50 to-emerald-50/50' : 'bg-gray-100/50'}`}>
       <div className="text-gray-600 text-sm">{label}</div>
       <a href={`tel:${number}`} className="text-teal-700 font-bold hover:underline">{number}</a>
@@ -96,15 +102,15 @@ const Helplines: React.FC<{ uiStrings: UIStrings }> = ({ uiStrings }) => {
     <div className="mt-2">
       <h4 className="font-bold mb-2">{uiStrings.helplinesTitle}</h4>
       <div className="space-y-2">
-        <HelplineRow label="Hospital" number="0120 662 9999" isPrimary />
-        <HelplineRow label={uiStrings.police} number="100" />
-        <HelplineRow label={uiStrings.ambulance} number="102" />
+        <Row label="Hospital" number="0120 662 9999" isPrimary />
+        <Row label={uiStrings.police} number="100" />
+        <Row label={uiStrings.ambulance} number="102" />
       </div>
     </div>
   );
 };
 
-// ------------------ Brand Header ------------------
+// ✅ Brand Header
 const BrandHeader: React.FC = () => (
   <div className="flex items-center gap-2.5">
     <div className="flex items-center justify-center w-[40px] h-[40px] rounded-[12px] bg-gradient-to-b from-[#19c7b3] to-[#0f766e]">
@@ -117,7 +123,7 @@ const BrandHeader: React.FC = () => (
   </div>
 );
 
-// ------------------ Main Component ------------------
+// ✅ Main Component
 const LeftPanel: React.FC<{ onDoctorFound: (doctor: DoctorInfo | null) => void; doctor: DoctorInfo | null; appendLog: (text: string, direction: 'in' | 'out') => void; uiStrings: UIStrings; }> =
 ({ onDoctorFound, doctor, appendLog, uiStrings }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -132,22 +138,20 @@ const LeftPanel: React.FC<{ onDoctorFound: (doctor: DoctorInfo | null) => void; 
     setIsLoading(true);
     appendLog('Finding nearby doctors...', 'out');
     try {
-      const position = await new Promise<GeolocationPosition>((resolve, reject) =>
+      const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
         navigator.geolocation.getCurrentPosition(resolve, reject)
       );
+      const { latitude, longitude } = pos.coords;
 
-      const { latitude, longitude } = position.coords;
+      const nearby = localDoctors
+        .map(d => ({ ...d, distKm: getDistanceKm(latitude, longitude, d.lat, d.lon) }))
+        .sort((a, b) => a.distKm - b.distKm);
 
-      const doctorsWithDist = localDoctors.map(d => ({
-        ...d,
-        distKm: getDistanceKm(latitude, longitude, d.lat, d.lon),
-      }));
-
-      const nearest = doctorsWithDist.sort((a, b) => a.distKm - b.distKm)[0];
+      const nearest = nearby[0];
       onDoctorFound(nearest);
       appendLog(`Nearest doctor: ${nearest.name} (${formatDistance(nearest.distKm)})`, 'in');
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : String(error);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
       appendLog(`Error finding doctors: ${msg}`, 'in');
       alert(`Error finding doctors: ${msg}`);
       onDoctorFound(null);
@@ -156,25 +160,30 @@ const LeftPanel: React.FC<{ onDoctorFound: (doctor: DoctorInfo | null) => void; 
     }
   };
 
-  // ✅ Nearby Hospitals
+  // ✅ Nearby Hospitals (fixed)
   const handleSearchHospitals = async () => {
     appendLog('Finding nearby hospitals...', 'out');
     try {
-      const position = await new Promise<GeolocationPosition>((resolve, reject) =>
+      const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
         navigator.geolocation.getCurrentPosition(resolve, reject)
       );
+      const { latitude, longitude } = pos.coords;
 
-      const { latitude, longitude } = position.coords;
-      const hospitalsWithDist = localHospitals.map(h => ({
-        ...h,
-        distKm: getDistanceKm(latitude, longitude, h.lat, h.lon),
-      }));
+      const nearby = localHospitals
+        .map(h => ({ ...h, distKm: getDistanceKm(latitude, longitude, h.lat, h.lon) }))
+        .sort((a, b) => a.distKm - b.distKm);
 
-      const nearest = hospitalsWithDist.sort((a, b) => a.distKm - b.distKm)[0];
+      if (nearby.length === 0) {
+        appendLog('No nearby hospitals found.', 'in');
+        alert('No hospitals found nearby.');
+        return;
+      }
+
+      const nearest = nearby[0];
       appendLog(`Nearest hospital: ${nearest.name} (${formatDistance(nearest.distKm)})`, 'in');
-      services.openMapsDirections(nearest.lat, nearest.lon, nearest.name);
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : String(error);
+      openMapsDirections(nearest.lat, nearest.lon, nearest.name);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
       appendLog(`Location error: ${msg}`, 'in');
       alert(`Location error: ${msg}`);
     }
