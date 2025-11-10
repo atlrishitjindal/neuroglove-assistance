@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { DoctorInfo, UIStrings } from '../services';
 import * as services from '../services';
+const mapsKey = import.meta.env.VITE_GOOGLE_MAPS_KEY;
+
 
 // ✅ Local fallback for distance formatting
 const formatDistance = (km: number) => {
