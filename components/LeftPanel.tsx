@@ -35,7 +35,7 @@ const DoctorCard: React.FC<{ doctor: DoctorInfo; uiStrings: UIStrings }> = ({
   };
 
   return (
-    <div className="mt-2 p-4 rounded-xl bg-gradient-to-b from-teal-50 to-emerald-50 border border-teal-100/50 flex flex-col gap-3 animate-fade-in">
+    <div className="mt-2 p-4 rounded-xl bg-gradient-to-b from-teal-50 to-emerald-50 border border-teal-100/50 animate-fade-in">
       {/* Doctor Info */}
       <div className="flex gap-3 items-center">
         <div className="w-14 h-14 rounded-lg bg-gradient-to-b from-teal-100 to-teal-200 flex items-center justify-center font-extrabold text-teal-800 text-lg flex-shrink-0">
@@ -49,42 +49,46 @@ const DoctorCard: React.FC<{ doctor: DoctorInfo; uiStrings: UIStrings }> = ({
             {doctor.name}
           </div>
           <div className="text-gray-500 text-sm mt-1">{doctor.types}</div>
-          <div className="text-gray-400 text-xs mt-1">{doctor.address}</div>
+          {doctor.address && (
+            <div className="text-gray-400 text-xs mt-1">{doctor.address}</div>
+          )}
         </div>
       </div>
 
-      {/* Contact & Buttons */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4">
+      {/* Contact + Actions */}
+      <div className="mt-3 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
         <a
           href={doctor.phone ? `tel:${doctor.phone.replace(/\s+/g, "")}` : "#"}
-          className="text-teal-700 font-bold text-sm hover:underline"
+          className="text-teal-700 font-bold text-sm hover:underline break-all"
         >
           {doctor.phone || uiStrings.phoneNotAvailable}
         </a>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto justify-start sm:justify-end">
-          <div className="text-teal-800 font-bold min-w-[60px] text-sm text-right">
+        {/* Buttons Container */}
+        <div className="flex flex-wrap items-center justify-start sm:justify-end gap-2 w-full sm:w-auto">
+          <div className="text-teal-800 font-bold min-w-[50px] text-sm text-right">
             {formatDistance(doctor.distKm)}
           </div>
 
           <button
             onClick={handleDirections}
-            className="flex-1 sm:flex-none text-teal-700 font-bold text-xs px-3 py-1.5 rounded-md bg-teal-500/10 border border-teal-500/20 hover:bg-teal-500/20 transition-colors whitespace-nowrap"
+            className="flex items-center justify-center gap-1 text-teal-700 font-bold text-xs px-3 py-1.5 rounded-md bg-teal-500/10 border border-teal-500/20 hover:bg-teal-500/20 transition-colors"
           >
-            {uiStrings.directions}
+            🧭 {uiStrings.directions}
           </button>
 
           <button
             onClick={handleWhatsApp}
-            className="flex-1 sm:flex-none text-green-700 font-bold text-xs px-3 py-1.5 rounded-md bg-green-500/10 border border-green-500/20 hover:bg-green-500/20 transition-colors whitespace-nowrap"
+            className="flex items-center justify-center gap-1 text-green-700 font-bold text-xs px-3 py-1.5 rounded-md bg-green-500/10 border border-green-500/20 hover:bg-green-500/20 transition-colors"
           >
-            {uiStrings.whatsapp}
+            💬 {uiStrings.whatsapp}
           </button>
         </div>
       </div>
     </div>
   );
 };
+
 
 // ✅ Helplines component
 const Helplines: React.FC<{ uiStrings: UIStrings }> = ({ uiStrings }) => {
