@@ -162,32 +162,25 @@ const LeftPanel: React.FC<{ onDoctorFound: (doctor: DoctorInfo | null) => void; 
 
   // ✅ Nearby Hospitals (fixed)
   const handleSearchHospitals = async () => {
-    appendLog('Finding nearby hospitals...', 'out');
-    try {
-      const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
-        navigator.geolocation.getCurrentPosition(resolve, reject)
-      );
-      const { latitude, longitude } = pos.coords;
+  appendLog('Opening Google Maps for nearby hospitals...', 'out');
+  try {
+    const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
+      navigator.geolocation.getCurrentPosition(resolve, reject)
+    );
+    const { latitude, longitude } = pos.coords;
 
-      const nearby = localHospitals
-        .map(h => ({ ...h, distKm: getDistanceKm(latitude, longitude, h.lat, h.lon) }))
-        .sort((a, b) => a.distKm - b.distKm);
+    // ✅ Open Google Maps with search for "hospitals" near user's location
+    const url = `https://www.google.com/maps/search/hospitals/@${latitude},${longitude},14z`;
+    window.open(url, '_blank');
 
-      if (nearby.length === 0) {
-        appendLog('No nearby hospitals found.', 'in');
-        alert('No hospitals found nearby.');
-        return;
-      }
+    appendLog('Showing nearby hospitals in Google Maps.', 'in');
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    appendLog(`Location error: ${msg}`, 'in');
+    alert(`Location error: ${msg}`);
+  }
+};
 
-      const nearest = nearby[0];
-      appendLog(`Nearest hospital: ${nearest.name} (${formatDistance(nearest.distKm)})`, 'in');
-      openMapsDirections(nearest.lat, nearest.lon, nearest.name);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      appendLog(`Location error: ${msg}`, 'in');
-      alert(`Location error: ${msg}`);
-    }
-  };
 
   return (
     <div className="bg-white rounded-xl p-4 shadow-lg flex flex-col gap-4">
